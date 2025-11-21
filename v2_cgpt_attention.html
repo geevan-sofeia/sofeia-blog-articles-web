@@ -1,0 +1,803 @@
+<!-- 
+  TRANSFORMER ARCHITECTURE: THE FULL GUIDE (WITH MICRO-ANIMATIONS + THEME TOGGLE)
+  Responsive, Dark Mode, Divi-Compatible
+-->
+
+<style>
+    /* --- THEME WRAPPER + TOGGLE --- */
+    .tb-theme-wrapper {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px 20px 40px;
+        position: relative;
+    }
+
+    /* Hide the raw checkbox, keep it accessible */
+    .tb-toggle-input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    /* Toggle label layout */
+    .tb-toggle-label {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        font-size: 0.85rem;
+        color: #64748b;
+        cursor: pointer;
+        margin-bottom: 10px;
+        user-select: none;
+    }
+
+    .tb-toggle-text {
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    /* Track + thumb */
+    .tb-toggle-track {
+        width: 40px;
+        height: 20px;
+        border-radius: 999px;
+        background: #0f172a;
+        border: 1px solid rgba(148,163,184,0.7);
+        display: inline-flex;
+        align-items: center;
+        padding: 2px;
+        box-sizing: border-box;
+        transition: background 0.25s, border-color 0.25s;
+    }
+
+    .tb-toggle-thumb {
+        width: 14px;
+        height: 14px;
+        border-radius: 999px;
+        background: #e5e7eb;
+        transform: translateX(0);
+        transition: transform 0.25s;
+    }
+
+    /* When checked, move thumb and lighten track */
+    .tb-toggle-input:checked + .tb-toggle-label .tb-toggle-track {
+        background: #e5f3ff;
+        border-color: #1389AD;
+    }
+
+    .tb-toggle-input:checked + .tb-toggle-label .tb-toggle-thumb {
+        transform: translateX(18px);
+    }
+
+    /* --- SCOPED CSS VARIABLES --- */
+    .tb-container {
+        /* Palette from image_1e7aa4.png */
+        --tb-pink: #E6446B;   /* Action / Query / RNN */
+        --tb-yellow: #F3C759; /* Attention / Key / Highlight */
+        --tb-green: #1CC998;  /* Transformer / Value / Success */
+        --tb-blue: #1389AD;   /* Headers / Structure */
+        --tb-dark: #083345;   /* Background */
+        
+        /* Functional Colors (dark theme default) */
+        --tb-bg: var(--tb-dark);
+        --tb-card-bg: #0b3a4e; 
+        --tb-text: #e2e8f0;
+        --tb-muted: #94a3b8;
+        --tb-border: rgba(255,255,255,0.08);
+
+        /* Layout */
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        line-height: 1.7;
+        color: var(--tb-text);
+        background-color: var(--tb-bg);
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 40px 20px;
+        border-radius: 8px;
+    }
+
+    .tb-container * { box-sizing: border-box; }
+
+    /* Light theme: override only neutrals when toggle is on */
+    .tb-toggle-input:checked ~ .tb-container {
+        --tb-bg: #f4f7fb;
+        --tb-card-bg: #ffffff;
+        --tb-text: #0f172a;
+        --tb-muted: #64748b;
+        --tb-border: rgba(15,23,42,0.08);
+    }
+
+    /* Optional: keep diagrams readable on light background */
+    .tb-toggle-input:checked ~ .tb-container .tb-diagram {
+        background: #f1f5f9;
+        border-color: rgba(15,23,42,0.06);
+    }
+
+    .tb-toggle-input:checked ~ .tb-container .tb-section {
+        box-shadow: 0 12px 25px rgba(15,23,42,0.08);
+    }
+
+    /* Light theme: fix quote text in decoder */
+    .tb-toggle-input:checked ~ .tb-container .tb-diagram > div[style] {
+        color: #0f172a !important; /* deep navy */
+        
+    }
+
+    .tb-toggle-input:checked ~ .tb-container .tb-diagram span[style] {
+    border-color: var(--tb-green) !important;
+    }
+
+    /* Light theme: footer / citation text visibility */
+    .tb-toggle-input:checked ~ .tb-container .tb-citation h4,
+    .tb-toggle-input:checked ~ .tb-container .tb-citation p,
+    .tb-toggle-input:checked ~ .tb-container .tb-citation em {
+    color: #0f172a !important;  /* deep navy */
+    opacity: 0.75;              /* subtle, elegant */
+    }
+
+    .tb-toggle-input:checked ~ .tb-container .tb-citation em {
+    color: #083345 !important;  /* your theme's deep blue */
+    opacity: 1;
+    }
+
+    /* Light mode: fix toggle label + main header text */
+    .tb-toggle-input:checked ~ .tb-container .tb-header h1 {
+        color: #0f172a !important;      /* deep navy */
+        text-shadow: none !important;    /* remove glow for crisp light mode */
+    }
+
+    .tb-toggle-input:checked ~ .tb-container .tb-toggle-label {
+        color: #0f172a !important;
+    }
+
+
+    .tb-toggle-input:checked ~ .tb-container .tb-toggle-label {
+        color: var(--tb-blue) !important;
+    }
+
+
+    /* Light mode: make probability bars visible */
+    .tb-toggle-input:checked ~ .tb-container .prob-bar-bg {
+        background: rgba(0,0,0,0.08) !important;     /* subtle light-grey */
+    }
+
+    .tb-toggle-input:checked ~ .tb-container .prob-bar-fill {
+        opacity: 1 !important;                       /* ensure full visibility */
+    }
+
+    .tb-toggle-input:checked ~ .tb-container .prob-bar-bg {
+        height: 10px !important;
+    }
+
+    .tb-toggle-input:checked ~ .tb-container .prob-bar-fill {
+        border-radius: 5px !important;
+    }
+
+
+
+
+
+    /* Light theme: fix positional encoding word contrast */
+    .tb-toggle-input:checked ~ .tb-container .pos-word {
+        color: #ffffff !important;
+    }
+
+    .tb-toggle-input:checked ~ .tb-container .pos-word {
+    background: #0f334e !important; /* lighter navy */
+    color: #ffffff !important;      /* guaranteed legibility */
+    border-color: rgba(0,0,0,0.15); 
+    }
+
+
+
+
+
+
+    /* Light theme text fixes */
+    .tb-toggle-input:checked ~ .tb-container .tb-text strong {
+        color: #0f172a;        /* dark navy, matches body text */
+    }
+
+    .tb-toggle-input:checked ~ .tb-container .tb-title {
+        color: #0f172a;        /* make module titles readable on white cards */
+    }
+
+    .tb-toggle-input:checked ~ .tb-container .prob-val {
+        color: #0f172a;        /* decoder percentages, so they are visible on light diagram */
+    }
+
+
+    /* --- KEYFRAME ANIMATIONS --- */
+
+    /* Card entry */
+    @keyframes tb-card-enter {
+        from { opacity: 0; transform: translateY(14px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Soft pulse for key nodes */
+    @keyframes tb-pulse {
+        0%   { box-shadow: 0 0 0 0 rgba(230, 68, 107, 0.35); }
+        70%  { box-shadow: 0 0 0 14px rgba(230, 68, 107, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(230, 68, 107, 0); }
+    }
+
+    @keyframes tb-pulse-yellow {
+        0%   { box-shadow: 0 0 0 0 rgba(243, 199, 89, 0.45); }
+        70%  { box-shadow: 0 0 0 16px rgba(243, 199, 89, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(243, 199, 89, 0); }
+    }
+
+    /* Mesh drift */
+    @keyframes tb-mesh-drift {
+        from { background-position: 0 0; }
+        to   { background-position: 40px 40px; }
+    }
+
+    /* Decoder bar grow */
+    @keyframes tb-bar-grow {
+        from { transform: scaleX(0); }
+        to   { transform: scaleX(1); }
+    }
+
+    /* --- TYPOGRAPHY --- */
+    .tb-header { text-align: center; margin-bottom: 60px; }
+    .tb-header h1 {
+        font-size: clamp(2rem, 5vw, 3rem);
+        margin-bottom: 15px;
+        color: #ffffff;
+        line-height: 1.1;
+        text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .tb-header h2 {
+        font-size: clamp(1rem, 2vw, 1.2rem);
+        color: var(--tb-blue);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        margin-top: 0;
+    }
+
+    /* --- SECTIONS --- */
+    .tb-section {
+        background: var(--tb-card-bg);
+        border-radius: 16px;
+        padding: 40px;
+        margin-bottom: 50px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+        border: 1px solid var(--tb-border);
+        position: relative;
+        overflow: hidden;
+
+        /* Entry animation */
+        opacity: 0;
+        transform: translateY(14px);
+        animation: tb-card-enter 0.7s ease-out forwards;
+    }
+
+    /* Staggered appearance using nth-of-type inside the container */
+    .tb-container .tb-section:nth-of-type(1) { animation-delay: 0.05s; }
+    .tb-container .tb-section:nth-of-type(2) { animation-delay: 0.15s; }
+    .tb-container .tb-section:nth-of-type(3) { animation-delay: 0.25s; }
+    .tb-container .tb-section:nth-of-type(4) { animation-delay: 0.35s; }
+    .tb-container .tb-section:nth-of-type(5) { animation-delay: 0.45s; }
+    .tb-container .tb-section:nth-of-type(6) { animation-delay: 0.55s; }
+    .tb-container .tb-section:nth-of-type(7) { animation-delay: 0.65s; }
+    .tb-container .tb-section:nth-of-type(8) { animation-delay: 0.75s; }
+
+    /* Card hover micro interaction */
+    .tb-section:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+    }
+
+    .tb-intro, .tb-conclusion {
+        background: rgba(19, 137, 173, 0.1);
+        border: 1px solid var(--tb-blue);
+    }
+
+    /* Module Number Badge */
+    .tb-module-section::before {
+        content: attr(data-module);
+        position: absolute;
+        top: -20px;
+        right: -20px;
+        font-size: 8rem;
+        font-weight: 900;
+        color: rgba(255,255,255,0.03);
+        z-index: 0;
+        pointer-events: none;
+    }
+
+    .tb-content { position: relative; z-index: 1; }
+
+    .tb-title {
+        font-size: clamp(1.5rem, 3vw, 2rem);
+        color: white;
+        margin-top: 0;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 3px solid;
+        display: inline-block;
+    }
+
+    .tb-text { font-size: 1.1rem; margin-bottom: 25px; color: var(--tb-text); }
+    .tb-text strong { color: white; font-weight: 700; }
+    
+    /* --- DIAGRAM UTILITIES --- */
+    .tb-diagram {
+        background: rgba(0,0,0,0.25);
+        border-radius: 12px;
+        padding: 30px;
+        margin: 35px 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--tb-border);
+    }
+
+    .tb-label {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--tb-muted);
+        margin-bottom: 25px;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .tb-scroll-x {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 10px;
+        display: flex;
+        justify-content: center;
+    }
+    @media (max-width: 600px) { .tb-scroll-x { justify-content: flex-start; } }
+
+    /* --- VISUAL ELEMENTS --- */
+
+    /* Nodes */
+    .tb-node {
+        background: var(--tb-dark);
+        border: 2px solid #334155;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-weight: bold;
+        color: #cbd5e1;
+        white-space: nowrap;
+        transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s, color 0.3s, opacity 0.3s;
+        position: relative;
+    }
+    
+    /* RNN */
+    .tb-rnn-chain { display: flex; gap: 10px; align-items: center; }
+    .rnn-arrow { color: #475569; font-size: 1.2rem; }
+    .rnn-faded { opacity: 0.3; border-color: transparent; }
+    .rnn-active { 
+        border-color: var(--tb-pink); color: var(--tb-pink); 
+        background: rgba(230, 68, 107, 0.1);
+        animation: tb-pulse 2.6s ease-out infinite;
+    }
+
+    /* Transformer Grid */
+    .tb-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+        gap: 15px;
+        width: 100%;
+        max-width: 600px;
+    }
+    .trans-node {
+        border-color: var(--tb-green);
+        color: var(--tb-green);
+        background: rgba(28, 201, 152, 0.1);
+        text-align: center;
+    }
+    .trans-node:hover {
+        transform: translateY(-3px);
+        border-color: #3BE5B8;
+        box-shadow: 0 0 18px rgba(28, 201, 152, 0.45);
+    }
+
+    .tb-mesh {
+        position: absolute; width: 100%; height: 100%;
+        background-image: radial-gradient(rgba(28, 201, 152, 0.2) 1px, transparent 1px);
+        background-size: 20px 20px;
+        z-index: -1; opacity: 0.5;
+        animation: tb-mesh-drift 20s linear infinite;
+    }
+
+    /* Attention */
+    .atten-row { display: flex; gap: 8px; }
+    .atten-node { 
+        font-size: 0.9rem; padding: 8px 12px; 
+        border: 1px solid #334155; color: #64748b;
+        border-radius: 6px;
+        transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s, background 0.25s, color 0.25s;
+    }
+    .atten-source { 
+        background: var(--tb-yellow); color: var(--tb-dark); 
+        border-color: var(--tb-yellow);
+        font-weight: bold;
+        animation: tb-pulse-yellow 3s ease-out infinite;
+    }
+    .atten-target { 
+        border-color: var(--tb-yellow); color: var(--tb-yellow); 
+        background: rgba(243, 199, 89, 0.05);
+    }
+    .atten-target:hover {
+        transform: translateY(-2px);
+        background: rgba(243, 199, 89, 0.15);
+        box-shadow: 0 0 14px rgba(243, 199, 89, 0.35);
+    }
+
+    .atten-connector {
+        width: 60%; height: 4px; margin: 15px 0;
+        background: linear-gradient(90deg, transparent, var(--tb-yellow), transparent);
+        border-radius: 2px; opacity: 0.8;
+    }
+
+    /* QKV Library */
+    .qkv-container { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; justify-content: center; }
+    .qkv-card {
+        width: 100px; height: 140px;
+        border-radius: 8px;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        text-align: center; font-weight: bold;
+        position: relative;
+        transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s, background 0.25s;
+    }
+    .card-query { border: 2px solid var(--tb-pink); color: var(--tb-pink); background: rgba(230, 68, 107, 0.05); }
+    .card-key   { border: 2px solid var(--tb-yellow); color: var(--tb-yellow); background: rgba(243, 199, 89, 0.05); }
+    .card-value { border: 2px solid var(--tb-green); color: var(--tb-green); background: rgba(28, 201, 152, 0.05); }
+    
+    .qkv-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 14px 28px rgba(0,0,0,0.35);
+    }
+
+    .qkv-match-icon { font-size: 1.5rem; color: white; }
+    .qkv-label { font-size: 0.7rem; text-transform: uppercase; position: absolute; top: 10px; opacity: 0.7; }
+    .qkv-icon { font-size: 2rem; margin-bottom: 10px; }
+
+    /* Multi-Head */
+    .multi-head-stack { display: flex; flex-direction: column; gap: 5px; align-items: center; width: 100%; }
+    .head-layer { 
+        width: 80%; height: 8px; border-radius: 4px; 
+        position: relative; overflow: hidden;
+        opacity: 0.7;
+        transition: transform 0.25s, opacity 0.25s;
+    }
+    .hl-1 { background: var(--tb-pink); width: 60%; align-self: flex-start; margin-left: 10%; }
+    .hl-2 { background: var(--tb-yellow); width: 40%; align-self: flex-end; margin-right: 15%; }
+    .hl-3 { background: var(--tb-green); width: 70%; align-self: center; }
+    
+    .multi-head-stack:hover .head-layer {
+        transform: translateY(-2px);
+        opacity: 1;
+    }
+    
+    .head-text { font-size: 0.9rem; display: flex; gap: 10px; margin-bottom: 10px; }
+
+    /* Positional Encoding */
+    .pos-row { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; }
+    .pos-word { 
+        position: relative;
+        padding: 10px 20px;
+        background: var(--tb-dark); 
+        border: 1px solid #334155;
+        border-radius: 6px;
+        /* if numbers look cut off, remove this: */
+        /* overflow: hidden; */
+    }
+    .pos-word:hover {
+        transform: translateY(-3px);
+        border-color: var(--tb-blue);
+        box-shadow: 0 0 16px rgba(19, 137, 173, 0.45);
+    }
+    .pos-badge {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        width: 24px;
+        height: 24px;
+        background: var(--tb-blue);
+        color: white;
+        border-radius: 50%;
+        font-size: 0.7rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    }
+    .pos-wave {
+        position: absolute; bottom: 0; left: 0; width: 100%; height: 4px;
+        background: linear-gradient(90deg, var(--tb-blue), transparent);
+        opacity: 0.5;
+    }
+
+    /* Decoder */
+    .prob-chart { width: 100%; max-width: 400px; }
+    .prob-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .prob-label { width: 80px; text-align: right; font-size: 0.9rem; color: var(--tb-muted); }
+    .prob-bar-bg { 
+        flex: 1; height: 8px; 
+        background: rgba(255,255,255,0.1); 
+        border-radius: 4px; 
+        overflow: hidden;
+    }
+    .prob-bar-fill { 
+        height: 100%; 
+        border-radius: 4px;
+        transform-origin: left center;
+        transform: scaleX(0);
+        animation: tb-bar-grow 1s ease-out forwards;
+    }
+    /* slight stagger on rows */
+    .prob-row:nth-child(1) .prob-bar-fill { animation-delay: 0.1s; }
+    .prob-row:nth-child(2) .prob-bar-fill { animation-delay: 0.25s; }
+    .prob-row:nth-child(3) .prob-bar-fill { animation-delay: 0.4s; }
+
+    .prob-val { width: 40px; font-size: 0.8rem; color: white; }
+
+    /* CITATION FOOTER */
+    .tb-citation {
+        margin-top: 60px; padding-top: 40px;
+        border-top: 1px solid var(--tb-border);
+        font-size: 0.9rem; color: var(--tb-muted);
+        text-align: center;
+    }
+    .tb-citation h4 { color: white; margin-bottom: 10px; }
+
+    /* RESPONSIVE TWEAKS */
+    @media (max-width: 768px) {
+        .tb-container { padding: 20px 15px; }
+        .tb-section { padding: 30px 20px; }
+        .qkv-container { gap: 10px; }
+        .qkv-card { width: 80px; height: 110px; font-size: 0.8rem; }
+    }
+</style>
+
+<div class="tb-theme-wrapper">
+    <!-- Theme toggle control -->
+    <input type="checkbox" id="tb-theme-toggle" class="tb-toggle-input">
+    <label for="tb-theme-toggle" class="tb-toggle-label">
+        <span class="tb-toggle-text">Light mode</span>
+        <span class="tb-toggle-track">
+            <span class="tb-toggle-thumb"></span>
+        </span>
+    </label>
+
+    <div class="tb-container">
+
+        <!-- HEADER -->
+        <div class="tb-header">
+            <h1>Attention Is All You Need</h1>
+            <h2>From First Principles to ChatGPT</h2>
+        </div>
+
+        <!-- INTRO SECTION -->
+        <div class="tb-section tb-intro">
+            <div class="tb-content">
+                <h3 class="tb-title" style="border-color: var(--tb-blue);">Introduction: The Spark</h3>
+                <p class="tb-text">
+                    In 2017, a team of researchers at Google released a research paper with a humble title: <em>"Attention Is All You Need."</em> At the time, Artificial Intelligence was good, but it had hit a wall. It struggled with long documents, nuanced context, and training speed.
+                </p>
+                <p class="tb-text">
+                    The paper proposed a radical new architecture called the <strong>Transformer</strong>. It threw away the old methods of reading text sequentially and proposed a model that could pay attention to everything at once.
+                </p>
+                <p class="tb-text">
+                    This single architectural shift laid the foundation for the Generative AI revolution we are living in today. This guide visually deconstructs how it works, step by step.
+                </p>
+            </div>
+        </div>
+
+        <!-- MODULE 1 -->
+        <div class="tb-section tb-module-section" data-module="1">
+            <div class="tb-content">
+                <h3 class="tb-title" style="border-color: var(--tb-pink);">1. The Old World: The Sequential Bottleneck</h3>
+                <p class="tb-text">Before Transformers, AI read text like a human with short-term memory loss: one word at a time (Sequentially). This architecture is called a <strong>Recurrent Neural Network (RNN)</strong>.</p>
+                <p class="tb-text">The flaw? By the time it reaches the end of a long sentence, it "forgets" the beginning. This is the <strong>Vanishing Gradient</strong> problem.</p>
+                
+                <div class="tb-diagram">
+                    <div class="tb-label">Visualizing Memory Loss</div>
+                    <div class="tb-scroll-x">
+                        <div class="tb-rnn-chain">
+                            <div class="tb-node rnn-faded">The</div>
+                            <div class="rnn-arrow">&rarr;</div>
+                            <div class="tb-node rnn-faded">animal</div>
+                            <div class="rnn-arrow">&rarr;</div>
+                            <div class="tb-node" style="opacity: 0.6">didn't</div>
+                            <div class="rnn-arrow">&rarr;</div>
+                            <div class="tb-node rnn-active">cross...</div>
+                        </div>
+                    </div>
+                    <p style="font-size: 0.9rem; color: var(--tb-muted); margin-top: 15px; text-align: center;"><em>The signal from the start fades as it moves right.</em></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULE 2 -->
+        <div class="tb-section tb-module-section" data-module="2">
+            <div class="tb-content">
+                <h3 class="tb-title" style="border-color: var(--tb-green);">2. The New World: Parallel Processing</h3>
+                <p class="tb-text">The <strong>Transformer</strong> changed everything. It dispenses with recurrence. It looks at the <strong>entire sentence at once</strong>.</p>
+                <p class="tb-text">Imagine looking at a photograph. You do not scan it pixel by pixel, you see the whole image instantly. This allows for massive parallelization (speed) and perfect memory.</p>
+
+                <div class="tb-diagram" style="position: relative; overflow: hidden;">
+                    <div class="tb-mesh"></div>
+                    <div class="tb-label">The "God's Eye" View</div>
+                    <div class="tb-grid">
+                        <div class="tb-node trans-node">The</div>
+                        <div class="tb-node trans-node">animal</div>
+                        <div class="tb-node trans-node">didn't</div>
+                        <div class="tb-node trans-node">cross</div>
+                        <div class="tb-node trans-node">the</div>
+                        <div class="tb-node trans-node">street</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULE 3 -->
+        <div class="tb-section tb-module-section" data-module="3">
+            <div class="tb-content">
+                <h3 class="tb-title" style="border-color: var(--tb-yellow);">3. The Filing Cabinet (Q, K, V)</h3>
+                <p class="tb-text">How does the model find connections? The paper introduces three concepts: <strong>Query</strong>, <strong>Key</strong>, and <strong>Value</strong>.</p>
+                <p class="tb-text">Think of it like searching a library:</p>
+                <ul style="margin-bottom: 20px; color: var(--tb-muted);">
+                    <li><strong style="color:var(--tb-pink)">Query (Q):</strong> What you are looking for (for example: "science fiction").</li>
+                    <li><strong style="color:var(--tb-yellow)">Key (K):</strong> The label on the book spine.</li>
+                    <li><strong style="color:var(--tb-green)">Value (V):</strong> The actual book content you get when Q matches K.</li>
+                </ul>
+
+                <div class="tb-diagram">
+                    <div class="tb-label">The Attention Mechanism</div>
+                    <div class="qkv-container">
+                        <!-- Query -->
+                        <div class="qkv-card card-query">
+                            <div class="qkv-label">Query</div>
+                            <div class="qkv-icon">🔍</div>
+                            <div>"It"</div>
+                        </div>
+                        
+                        <div class="qkv-match-icon">+</div>
+                        
+                        <!-- Key -->
+                        <div class="qkv-card card-key">
+                            <div class="qkv-label">Key</div>
+                            <div class="qkv-icon">🏷️</div>
+                            <div>"Animal"</div>
+                        </div>
+
+                        <div class="qkv-match-icon">=</div>
+
+                        <!-- Value -->
+                        <div class="qkv-card card-value">
+                            <div class="qkv-label">Value</div>
+                            <div class="qkv-icon">📖</div>
+                            <div>Context</div>
+                        </div>
+                    </div>
+                    <p style="font-size: 0.9rem; color: var(--tb-muted); margin-top: 20px; text-align: center;"><em>When the Query matches the Key, the Value is extracted.</em></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULE 4 -->
+        <div class="tb-section tb-module-section" data-module="4">
+            <div class="tb-content">
+                <h3 class="tb-title" style="border-color: var(--tb-blue);">4. The Hydra: Multi-Head Attention</h3>
+                <p class="tb-text">A single focus is not enough. Language is complex. We need to look at grammar, tone, and definitions <strong>simultaneously</strong>.</p>
+                <p class="tb-text">The Transformer splits its "eyes" into multiple <strong>Heads</strong>. One head might focus on "Who did it?", while another focuses on "When did it happen?".</p>
+
+                <div class="tb-diagram">
+                    <div class="tb-label">Scanning Multiple Layers of Meaning</div>
+                    <div class="head-text">
+                        <div class="tb-node">The animal did not cross...</div>
+                    </div>
+                    <div class="multi-head-stack">
+                        <div class="head-layer hl-1"></div> <!-- Grammar Layer -->
+                        <div class="head-layer hl-2"></div> <!-- Reference Layer -->
+                        <div class="head-layer hl-3"></div> <!-- Context Layer -->
+                    </div>
+                    <div style="display:flex; gap:15px; margin-top:15px; font-size:0.8rem; color:var(--tb-muted);">
+                        <span style="color:var(--tb-pink)">● Grammar</span>
+                        <span style="color:var(--tb-yellow)">● Reference</span>
+                        <span style="color:var(--tb-green)">● Context</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULE 5 -->
+        <div class="tb-section tb-module-section" data-module="5">
+            <div class="tb-content">
+                <h3 class="tb-title" style="border-color: #ffffff;">5. The GPS: Positional Encoding</h3>
+                <p class="tb-text">Since the Transformer looks at everything at once, it does not inherently know that "Man bites Dog" is different from "Dog bites Man." It views them as a "bag of words."</p>
+                <p class="tb-text">To fix this, we inject <strong>Positional Encodings</strong> (math signals) into the words to give them a sense of order.</p>
+
+                <div class="tb-diagram">
+                    <div class="tb-label">Injecting Order Signal</div>
+                    <div class="pos-row">
+                        <div class="pos-word">Man <div class="pos-badge">1</div><div class="pos-wave"></div></div>
+                        <div class="pos-word">bites <div class="pos-badge">2</div><div class="pos-wave"></div></div>
+                        <div class="pos-word">Dog <div class="pos-badge">3</div><div class="pos-wave"></div></div>
+                    </div>
+                    <p style="font-size: 0.9rem; color: var(--tb-muted); margin-top: 15px; text-align: center;"><em>Mathematical "timestamps" are added to every word.</em></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULE 6 -->
+        <div class="tb-section tb-module-section" data-module="6">
+            <div class="tb-content">
+                <h3 class="tb-title" style="border-color: var(--tb-green);">6. The Decoder: Connecting to ChatGPT</h3>
+                <p class="tb-text">How does this create a chatbot? After the Encoder understands the prompt, the <strong>Decoder</strong> predicts the next likely word (token).</p>
+                <p class="tb-text">It calculates a probability score for every word in its dictionary and picks the winner.</p>
+
+                <div class="tb-diagram">
+                    <div class="tb-label">Predicting the Next Token</div>
+                    <div style="margin-bottom: 20px; font-size: 1.2rem; color: white;">"The animal did not cross the <span style="border-bottom: 2px solid var(--tb-green);">____</span>"</div>
+                    
+                    <div class="prob-chart">
+                        <!-- Street -->
+                        <div class="prob-row">
+                            <div class="prob-label">street</div>
+                            <div class="prob-bar-bg"><div class="prob-bar-fill" style="width: 85%; background: var(--tb-green);"></div></div>
+                            <div class="prob-val">85%</div>
+                        </div>
+                        <!-- Road -->
+                        <div class="prob-row">
+                            <div class="prob-label">road</div>
+                            <div class="prob-bar-bg"><div class="prob-bar-fill" style="width: 10%; background: var(--tb-yellow);"></div></div>
+                            <div class="prob-val">10%</div>
+                        </div>
+                        <!-- River -->
+                        <div class="prob-row">
+                            <div class="prob-label">river</div>
+                            <div class="prob-bar-bg"><div class="prob-bar-fill" style="width: 5%; background: var(--tb-pink);"></div></div>
+                            <div class="prob-val">5%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONCLUSION SECTION -->
+        <div class="tb-section tb-conclusion">
+            <div class="tb-content">
+                <h3 class="tb-title" style="border-color: var(--tb-yellow);">Conclusion: From Paper to ChatGPT</h3>
+                <p class="tb-text">
+                    So, what happens when you combine all these modules? You get the <strong>GPT</strong> architecture:
+                </p>
+                <ul style="margin-bottom: 30px; color: var(--tb-text); line-height: 1.8;">
+                    <li><strong style="color:var(--tb-green)">G (Generative):</strong> The Decoder (Module 6) generating text token by token.</li>
+                    <li><strong style="color:var(--tb-yellow)">P (Pre-trained):</strong> The model reads massive amounts of internet data using Parallel Processing (Module 2).</li>
+                    <li><strong style="color:var(--tb-pink)">T (Transformer):</strong> The underlying architecture using Self-Attention (Module 3) to understand context.</li>
+                </ul>
+                <p class="tb-text">
+                    This architecture matters because it solved the <strong>Scale</strong> problem. Because Transformers can process data in parallel, we could simply feed them more data and more GPUs, leading to the emergent intelligence we see in tools like ChatGPT, Gemini, and Claude today.
+                </p>
+            </div>
+        </div>
+
+        <!-- ATTRIBUTION FOOTER -->
+        <div class="tb-citation">
+            <h4>Based on the Seminal Paper</h4>
+            <p style="font-size: 1.1rem; color: white; font-style: italic;">"Attention Is All You Need"</p>
+            <p>Authored by:</p>
+            <p style="line-height: 1.6; color: var(--tb-muted);">
+                Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, <br>
+                Llion Jones, Aidan N. Gomez, Łukasz Kaiser, Illia Polosukhin
+            </p>
+            <p style="margin-top: 20px; font-size: 0.8rem; opacity: 0.6;">(Google Brain, Google Research, University of Toronto, 2017)</p>
+        </div>
+
+    </div>
+</div>
