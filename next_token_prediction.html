@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inside the LLM: Canvas Visualization</title>
+    <style>
+        /* --- CORE PALETTE & TYPOGRAPHY --- */
+        :root {
+            --col-deep-night: #25283D;
+            --col-slate: #444B66;
+            --col-muted: #928796;
+            --col-rose: #CAA89F;
+            --col-cream: #F2EAE4;
+            --font-main: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--col-deep-night);
+            color: var(--col-cream);
+            font-family: var(--font-main);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        h1, h2 { letter-spacing: -0.02em; }
+        h1 { font-size: 3rem; color: var(--col-rose); text-align: center; margin-top: 3rem; }
+        h2 { font-size: 1.8rem; margin-bottom: 0.5rem; color: var(--col-cream); }
+        p { color: #dcdcdc; max-width: 650px; margin: 0 auto 1.5rem auto; text-align: center; }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 2rem; }
+
+        /* --- MODULE CONTAINER --- */
+        .module {
+            background: rgba(37, 40, 61, 0.5);
+            border: 1px solid var(--col-slate);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 5rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+            position: relative;
+        }
+
+        .module-header { text-align: center; margin-bottom: 2rem; }
+        .badge {
+            background: var(--col-rose); color: var(--col-deep-night);
+            padding: 4px 10px; border-radius: 4px; font-weight: bold;
+            font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        /* --- TEXT SECTIONS --- */
+        .goal-box {
+            background: rgba(255,255,255,0.05);
+            border-left: 4px solid var(--col-slate);
+            padding: 1rem;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+        .goal-box strong { color: var(--col-rose); margin-right: 5px; }
+
+        .takeaway-box {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border: 1px solid rgba(202, 168, 159, 0.3);
+            background: rgba(202, 168, 159, 0.05);
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+        .takeaway-box strong { color: var(--col-rose); display: block; margin-bottom: 0.5rem; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;}
+
+        /* --- CANVAS STYLES --- */
+        .canvas-wrapper {
+            background: #1e2133; /* Slightly darker than deep night for contrast */
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 1rem;
+        }
+        
+        canvas { display: block; width: 100%; height: 100%; }
+
+        /* --- UI CONTROLS OVERLAY --- */
+        .controls {
+            display: flex; justify-content: center; gap: 1rem; margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        input[type="text"] {
+            padding: 10px 15px; border-radius: 8px; border: none;
+            background: var(--col-slate); color: var(--col-cream);
+            font-size: 1rem; width: 300px; outline: none; text-align: center;
+        }
+        input[type="text"]:focus { box-shadow: 0 0 0 2px var(--col-rose); }
+
+        button {
+            padding: 8px 16px; border: none; border-radius: 6px;
+            background: var(--col-slate); color: var(--col-cream);
+            cursor: pointer; font-weight: 600; transition: all 0.2s;
+        }
+        button:hover, button.active { background: var(--col-rose); color: var(--col-deep-night); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .slider-group { display: flex; align-items: center; gap: 1rem; color: var(--col-rose); font-family: monospace; }
+        input[type=range] { accent-color: var(--col-rose); }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Inside the Machine</h1>
+    <p>Five interactive visualizations powered by HTML5 Canvas to simulate the neurological processes of a Large Language Model.</p>
+
+    <!-- MODULE A: PROBABILITY -->
+    <div class="module">
+        <div class="module-header">
+            <span class="badge">Module A</span>
+            <h2>The Probability Engine</h2>
+        </div>
+
+        <div class="goal-box">
+            <strong>Goal:</strong> Show that the model is predicting the next piece of text based on statistics, not "thinking" like a human. It calculates the likelihood of the next word based <em>only</em> on the words that came immediately before.
+        </div>
+        
+        <div class="controls">
+            <input type="text" id="inputA" placeholder="Type: 'The cat sat on...'" autocomplete="off">
+        </div>
+        
+        <div class="canvas-wrapper" style="height: 300px;">
+            <canvas id="canvasA"></canvas>
+        </div>
+        
+        <div class="takeaway-box">
+            <strong>Takeaway</strong>
+            You just saw the core behavior of an LLM: it doesn’t "know the truth"; it predicts "what word usually comes next in texts like this." Notice how changing just one word (e.g., "sat" to "wrote") dramatically shifts the "fluid" levels of probability.
+        </div>
+    </div>
+
+    <!-- MODULE B: AUTOREGRESSIVE LOOP -->
+    <div class="module">
+        <div class="module-header">
+            <span class="badge">Module B</span>
+            <h2>The Autoregressive Loop</h2>
+        </div>
+
+        <div class="goal-box">
+            <strong>Goal:</strong> Explain how a model generates entire paragraphs. It’s not planning the whole text at once; it’s just repeating the "next token" trick over and over, feeding its own output back into itself.
+        </div>
+        
+        <div class="controls">
+            <button id="btnB">Generate Next Token</button>
+            <button id="resetB" style="background:transparent; border:1px solid var(--col-slate);">Reset</button>
+        </div>
+
+        <div class="canvas-wrapper" style="height: 250px;">
+            <canvas id="canvasB"></canvas>
+        </div>
+        
+        <div class="takeaway-box">
+            <strong>Takeaway</strong>
+            An LLM has amnesia. It only sees what is currently in its input window. To generate long text, it must physically loop its last output back to the start. This is why errors compound over time (hallucinations) and why generation is slow—it cannot happen in parallel.
+        </div>
+    </div>
+
+    <!-- MODULE C: SEMANTIC GALAXY -->
+    <div class="module">
+        <div class="module-header">
+            <span class="badge">Module C</span>
+            <h2>The Semantic Galaxy</h2>
+        </div>
+
+        <div class="goal-box">
+            <strong>Goal:</strong> Visualize <em>how</em> the model determines those probabilities. It's not a dictionary lookup; it's navigation through a high-dimensional map of meaning (vector space) where similar concepts cluster together.
+        </div>
+
+        <div class="controls">
+            <button onclick="targetC='furniture'">Context: "Furniture"</button>
+            <button onclick="targetC='royalty'">Context: "Royalty"</button>
+            <button onclick="targetC='food'">Context: "Food"</button>
+        </div>
+
+        <div class="canvas-wrapper" style="height: 400px;">
+            <canvas id="canvasC"></canvas>
+        </div>
+
+        <div class="takeaway-box">
+            <strong>Takeaway</strong>
+            The model doesn't understand English. It understands math. The "crosshair" represents the coordinates of your sentence. Predicting the next word is simply calculating which "concept star" is closest to where your sentence's trajectory lands in this galaxy.
+        </div>
+    </div>
+
+    <!-- MODULE D: ATTENTION -->
+    <div class="module">
+        <div class="module-header">
+            <span class="badge">Module D</span>
+            <h2>Attention Beams</h2>
+        </div>
+
+        <div class="goal-box">
+            <strong>Goal:</strong> Explain why the model picks specific words based on distant context. Show the "Attention Mechanism"—how it focuses (shines a beam) on relevant past information to resolve things like pronouns.
+        </div>
+
+        <div class="canvas-wrapper" style="height: 200px;">
+            <canvas id="canvasD"></canvas>
+        </div>
+
+        <div class="takeaway-box">
+            <strong>Takeaway</strong>
+            Hover over the words above. The glowing lines represent "Attention Weights." The model looks back at "cat" much more strongly than "fluffy" to understand what "it" is. This mechanism allows LLMs to stay coherent even when the subject of the sentence was mentioned paragraphs ago.
+        </div>
+    </div>
+
+    <!-- MODULE E: TEMPERATURE -->
+    <div class="module">
+        <div class="module-header">
+            <span class="badge">Module E</span>
+            <h2>The Multiverse Tree</h2>
+        </div>
+
+        <div class="goal-box">
+            <strong>Goal:</strong> Explain "hallucinations" and creativity. Why does the model sometimes lie or get weird? Because it's choosing between plausible paths, not just the single most likely one.
+        </div>
+
+        <div class="controls">
+            <div class="slider-group">
+                <span>Safe (0.0)</span>
+                <input type="range" id="rangeE" min="0" max="1.5" step="0.1" value="0.5">
+                <span>Chaos (1.5)</span>
+            </div>
+            <span id="tempDisplay" style="margin-left: 10px; color: var(--col-rose);">0.5</span>
+        </div>
+
+        <div class="canvas-wrapper" style="height: 350px;">
+            <canvas id="canvasE"></canvas>
+        </div>
+
+        <div class="takeaway-box">
+            <strong>Takeaway</strong>
+            LLMs don't have a "fact-check" module; they have a "plausibility" module. Low temperature (left) forces the safe, rigid path. High temperature (right) forces it to explore the wild, bushy edges of probability, leading to creativity or complete nonsense.
+        </div>
+    </div>
+
+</div>
+
+<script>
+/**
+ * SHARED UTILITIES
+ */
+const PALETTE = {
+    night: '#25283D',
+    slate: '#444B66',
+    muted: '#928796',
+    rose: '#CAA89F',
+    cream: '#F2EAE4'
+};
+
+function setupCanvas(id, drawFn) {
+    const canvas = document.getElementById(id);
+    const ctx = canvas.getContext('2d');
+    let animationId;
+
+    const resize = () => {
+        const parent = canvas.parentElement;
+        canvas.width = parent.clientWidth;
+        canvas.height = parent.clientHeight;
+    };
+    
+    window.addEventListener('resize', resize);
+    resize();
+
+    const loop = () => {
+        drawFn(ctx, canvas.width, canvas.height);
+        animationId = requestAnimationFrame(loop);
+    };
+    loop();
+    
+    return { canvas, ctx };
+}
+
+/**
+ * MODULE A: PROBABILITY (Fluid Bars)
+ */
+let probsA = [
+    { label: "mat", val: 0.1, target: 0.1 },
+    { label: "floor", val: 0.1, target: 0.1 },
+    { label: "bed", val: 0.1, target: 0.1 },
+    { label: "couch", val: 0.1, target: 0.1 }
+];
+
+const inputA = document.getElementById('inputA');
+inputA.addEventListener('input', (e) => {
+    const txt = e.target.value.toLowerCase();
+    if (txt.includes('cat sat')) {
+        updateProbsA([0.7, 0.15, 0.1, 0.05], ["mat", "floor", "bed", "couch"]);
+    } else if (txt.includes('cat wrote')) {
+        updateProbsA([0.8, 0.1, 0.05, 0.05], ["poem", "book", "code", "letter"]);
+    } else if (txt.includes('cat ate')) {
+        updateProbsA([0.6, 0.25, 0.1, 0.05], ["food", "mouse", "fish", "treat"]);
+    } else {
+        updateProbsA([0.1, 0.1, 0.1, 0.1], ["...", "...", "...", "..."]);
+    }
+});
+
+function updateProbsA(vals, labels) {
+    probsA.forEach((p, i) => {
+        p.target = vals[i];
+        p.label = labels[i];
+    });
+}
+
+setupCanvas('canvasA', (ctx, w, h) => {
+    ctx.clearRect(0, 0, w, h);
+    
+    const barW = w / probsA.length;
+    const maxH = h * 0.8;
+    
+    probsA.forEach((p, i) => {
+        // LERP for smooth animation
+        p.val += (p.target - p.val) * 0.1;
+        
+        const x = i * barW + (barW * 0.1);
+        const bw = barW * 0.8;
+        const bh = p.val * maxH;
+        const y = h - bh - 30;
+
+        // Glow
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = PALETTE.rose;
+        
+        // Bar
+        const grad = ctx.createLinearGradient(x, y, x, h);
+        grad.addColorStop(0, PALETTE.rose);
+        grad.addColorStop(1, PALETTE.slate);
+        ctx.fillStyle = grad;
+        
+        // Rounded top rect
+        ctx.beginPath();
+        ctx.roundRect(x, y, bw, bh, [8, 8, 0, 0]);
+        ctx.fill();
+        
+        ctx.shadowBlur = 0; // Reset glow for text
+
+        // Text
+        ctx.fillStyle = PALETTE.cream;
+        ctx.font = "bold 16px Inter";
+        ctx.textAlign = "center";
+        ctx.fillText(p.label, x + bw/2, h - 10);
+        
+        // Percentage
+        ctx.fillStyle = PALETTE.muted;
+        ctx.font = "12px monospace";
+        ctx.fillText(Math.round(p.val * 100) + "%", x + bw/2, y - 10);
+    });
+});
+
+
+/**
+ * MODULE B: LOOP (Particles on Conveyor)
+ */
+let tokensB = ["Once", "upon", "a", "time"];
+let particlesB = [];
+let processingB = false;
+
+document.getElementById('btnB').addEventListener('click', () => {
+    if(processingB) return;
+    processingB = true;
+    // Spawn particle
+    particlesB.push({ x: 50, y: 125, stage: 0 }); // 0=input, 1=process, 2=output, 3=loopback
+});
+document.getElementById('resetB').addEventListener('click', () => {
+    tokensB = ["Once", "upon", "a", "time"];
+    particlesB = [];
+    processingB = false;
+});
+
+setupCanvas('canvasB', (ctx, w, h) => {
+    ctx.clearRect(0, 0, w, h);
+    const cy = h/2;
+    const cx = w/2;
+
+    // Draw Static Machine Parts
+    ctx.strokeStyle = PALETTE.slate;
+    ctx.lineWidth = 2;
+    
+    // Input Box
+    ctx.strokeRect(50, cy - 20, 100, 40);
+    ctx.fillStyle = PALETTE.muted;
+    ctx.fillText("INPUT", 75, cy + 5);
+
+    // Processor (Center)
+    ctx.fillStyle = '#2a2d40';
+    ctx.beginPath(); ctx.arc(cx, cy, 40, 0, Math.PI*2); ctx.fill();
+    ctx.stroke();
+    // Gear animation
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(Date.now() / 500);
+    ctx.fillStyle = processingB ? PALETTE.rose : PALETTE.slate;
+    ctx.font = "30px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("⚙️", 0, 0);
+    ctx.restore();
+
+    // Output Box
+    ctx.strokeRect(w - 150, cy - 20, 100, 40);
+    ctx.fillStyle = PALETTE.muted;
+    ctx.fillText("OUTPUT", w - 120, cy + 5);
+
+    // Loop Path
+    ctx.beginPath();
+    ctx.moveTo(w - 100, cy + 20);
+    ctx.lineTo(w - 100, cy + 80);
+    ctx.lineTo(100, cy + 80);
+    ctx.lineTo(100, cy + 20);
+    ctx.strokeStyle = PALETTE.rose;
+    ctx.setLineDash([5, 5]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Draw Tokens
+    ctx.font = "14px monospace";
+    ctx.fillStyle = PALETTE.cream;
+    let tokenStr = tokensB.join(" ");
+    if(tokenStr.length > 20) tokenStr = "..." + tokenStr.slice(-20);
+    ctx.fillText(tokenStr, 60, cy - 30);
+
+    // Draw Particles
+    for(let i = particlesB.length - 1; i >= 0; i--) {
+        let p = particlesB[i];
+        
+        // State Machine Movement
+        if (p.stage === 0) { // Move to processor
+            p.x += 4;
+            if(p.x > cx) p.stage = 1;
+        } else if (p.stage === 1) { // Process
+            // Wait a bit? Just pass through for visuals
+            p.x += 2;
+            if(p.x > w - 100) p.stage = 2;
+        } else if (p.stage === 2) { // Drop down
+            p.y += 4;
+            if(p.y > cy + 80) p.stage = 3;
+        } else if (p.stage === 3) { // Loop back
+            p.x -= 8; // Fast loop back
+            if(p.x < 100) p.stage = 4;
+        } else if (p.stage === 4) { // Move up
+            p.y -= 4;
+            if(p.y <= cy) {
+                // Done
+                tokensB.push("next");
+                particlesB.splice(i, 1);
+                processingB = false;
+                continue;
+            }
+        }
+
+        // Draw Particle
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = PALETTE.rose;
+        ctx.fillStyle = PALETTE.rose;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 6, 0, Math.PI*2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+});
+
+
+/**
+ * MODULE C: GALAXY (3D Starfield)
+ */
+let starsC = [];
+let targetC = 'furniture';
+let camX = 0, camY = 0;
+
+function initStars(w, h) {
+    starsC = [];
+    for(let i=0; i<200; i++) {
+        starsC.push({
+            x: Math.random() * w,
+            y: Math.random() * h,
+            z: Math.random() * 2 + 0.5, // Depth
+            cat: Math.random() > 0.66 ? 'furniture' : (Math.random() > 0.5 ? 'royalty' : 'food') 
+        });
+    }
+}
+
+setupCanvas('canvasC', (ctx, w, h) => {
+    if(starsC.length === 0) initStars(w, h);
+    ctx.clearRect(0, 0, w, h);
+    
+    // Target locations
+    const targets = {
+        furniture: {x: w*0.8, y: h*0.8},
+        royalty: {x: w*0.2, y: h*0.2},
+        food: {x: w*0.8, y: h*0.2}
+    };
+    
+    // Camera Ease
+    let tx = targets[targetC].x;
+    let ty = targets[targetC].y;
+    camX += (tx - camX) * 0.05;
+    camY += (ty - camY) * 0.05;
+
+    // Draw Stars
+    starsC.forEach(s => {
+        let color = PALETTE.slate;
+        if(s.cat === targetC) color = PALETTE.rose; // Highlight relevant stars
+        
+        // Parallax
+        let dx = (s.x - camX) * (0.05 * s.z);
+        let dy = (s.y - camY) * (0.05 * s.z);
+        
+        ctx.globalAlpha = (s.cat === targetC) ? 1 : 0.3;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(s.x + dx, s.y + dy, s.z * 2, 0, Math.PI*2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        
+        // Connect lines if close to target and correct category
+        if(s.cat === targetC && Math.abs(dx) < 50 && Math.abs(dy) < 50) {
+            ctx.strokeStyle = PALETTE.rose;
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(camX, camY);
+            ctx.lineTo(s.x + dx, s.y + dy);
+            ctx.stroke();
+        }
+    });
+
+    // Draw Crosshair (Ship)
+    ctx.strokeStyle = PALETTE.cream;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(camX, camY, 15, 0, Math.PI*2);
+    ctx.moveTo(camX - 20, camY); ctx.lineTo(camX + 20, camY);
+    ctx.moveTo(camX, camY - 20); ctx.lineTo(camX, camY + 20);
+    ctx.stroke();
+    
+    ctx.fillStyle = PALETTE.cream;
+    ctx.fillText("VECTOR PROBE", camX + 20, camY - 20);
+});
+
+
+/**
+ * MODULE D: ATTENTION (Arcs)
+ */
+const wordsD = ["The", "fluffy", "cat", "saw", "it"];
+let hoverIdx = -1;
+
+setupCanvas('canvasD', (ctx, w, h) => {
+    ctx.clearRect(0, 0, w, h);
+    
+    const spacing = w / (wordsD.length + 1);
+    const yBase = h * 0.7;
+
+    // Draw Words
+    ctx.font = "bold 18px Inter";
+    ctx.textAlign = "center";
+    
+    wordsD.forEach((word, i) => {
+        const x = spacing * (i + 1);
+        
+        // Check hover (simple dist check since we don't have exact DOM rects in canvas easily without mapping)
+        // For this demo, we simulate hover logic or let user rely on proximity visual
+        // Actually, let's just make "it" (last word) the active one for the demo
+        const isTarget = (i === wordsD.length - 1);
+        
+        ctx.fillStyle = isTarget ? PALETTE.rose : PALETTE.cream;
+        ctx.fillText(word, x, yBase);
+        
+        // Draw Nodes
+        ctx.beginPath();
+        ctx.arc(x, yBase - 25, 4, 0, Math.PI*2);
+        ctx.fill();
+
+        // Draw Arcs from "it" to others
+        if (isTarget) {
+            wordsD.forEach((target, j) => {
+                if (i === j) return;
+                
+                // Logic: "cat" (idx 2) gets strong attention
+                let strength = 0.5;
+                if (target === "cat") strength = 3;
+                if (target === "saw") strength = 1;
+                
+                const tx = spacing * (j + 1);
+                
+                ctx.beginPath();
+                ctx.moveTo(x, yBase - 25);
+                const midX = (x + tx) / 2;
+                const midY = yBase - 25 - (50 * strength); // Height based on strength
+                
+                ctx.quadraticCurveTo(midX, midY, tx, yBase - 25);
+                
+                ctx.strokeStyle = PALETTE.rose;
+                ctx.lineWidth = strength;
+                ctx.globalAlpha = strength > 1 ? 1 : 0.2;
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+                
+                // Moving particles on the strong line
+                if (strength > 2) {
+                    const time = Date.now() / 500;
+                    const t = time % 1; // 0 to 1
+                    // Bezier point math
+                    const invT = 1 - t;
+                    const px = invT*invT*x + 2*invT*t*midX + t*t*tx;
+                    const py = invT*invT*(yBase-25) + 2*invT*t*midY + t*t*(yBase-25);
+                    
+                    ctx.fillStyle = PALETTE.cream;
+                    ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI*2); ctx.fill();
+                }
+            });
+        }
+    });
+});
+
+
+/**
+ * MODULE E: TEMPERATURE (Fractal Tree)
+ */
+const rangeE = document.getElementById('rangeE');
+const tempDisplay = document.getElementById('tempDisplay');
+let tempVal = 0.5;
+
+rangeE.addEventListener('input', (e) => {
+    tempVal = parseFloat(e.target.value);
+    tempDisplay.innerText = tempVal;
+});
+
+function drawBranch(ctx, startX, startY, len, angle, depth, temp) {
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    
+    const endX = startX + len * Math.cos(angle);
+    const endY = startY + len * Math.sin(angle);
+    
+    ctx.lineTo(endX, endY);
+    
+    // Color based on depth
+    ctx.strokeStyle = depth < 2 ? PALETTE.rose : PALETTE.slate;
+    ctx.lineWidth = (4 - depth) > 0 ? (4-depth) : 1;
+    ctx.stroke();
+
+    if (depth >= 4) return;
+
+    // Randomness influenced by temp
+    // Low temp = less spread, fewer branches
+    // High temp = wide spread, more branches
+    
+    const spread = 0.3 + (temp * 0.5); // Angle spread
+    const chance = 1.0; // Always branch for visual look, but vary angle
+    
+    // Branch 1
+    const angle1 = angle - spread + (Math.random() * temp * 0.2);
+    drawBranch(ctx, endX, endY, len * 0.7, angle1, depth + 1, temp);
+    
+    // Branch 2
+    const angle2 = angle + spread + (Math.random() * temp * 0.2);
+    drawBranch(ctx, endX, endY, len * 0.7, angle2, depth + 1, temp);
+    
+    // Chaos Branch (only on high temp)
+    if(temp > 1.0 && Math.random() > 0.5) {
+        const angle3 = angle + (Math.random() - 0.5);
+        drawBranch(ctx, endX, endY, len * 0.5, angle3, depth + 1, temp);
+    }
+}
+
+setupCanvas('canvasE', (ctx, w, h) => {
+    ctx.clearRect(0, 0, w, h);
+    // Draw Text Node at base
+    ctx.fillStyle = PALETTE.cream;
+    ctx.textAlign = "center";
+    ctx.fillText("The capital of...", w/2, h - 10);
+    
+    // Draw Fractal
+    // Seed randomness reset? No, let it jitter to show 'instability'
+    drawBranch(ctx, w/2, h - 30, 80, -Math.PI/2, 0, tempVal);
+});
+
+</script>
+</body>
+</html>
